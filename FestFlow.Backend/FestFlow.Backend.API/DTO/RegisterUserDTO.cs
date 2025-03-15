@@ -26,6 +26,6 @@ namespace FestFlow.Backend.API.DTO
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         [JsonProperty("createdBy")]
-        public string CreatedBy { get; set; }
+        public string CreatedBy { get; set; } = "admin@test.com";
     }
 }

@@ -17,7 +17,7 @@ namespace FestFlow.Backend.API.Validators
 
             RuleFor(o => o.Email)
                 .NotEmpty()
-                .WithMessage("FirstName is required")
+                .WithMessage("Email is required")
                 .EmailAddress()
                 .WithMessage("Entered Email is not valid");
 

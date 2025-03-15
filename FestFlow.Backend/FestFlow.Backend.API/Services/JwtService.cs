@@ -26,10 +26,10 @@ namespace FestFlow.Backend.API.Services
 
             var claims = new[]
             {
-                new Claim("Id", user.Id.ToString()),
-                new Claim("FullName", $"{user.FirstName} {user.LastName}"),
-                new Claim("Email", user.Email),
-                new Claim("Role", user.IsAdmin.ToString()),
+                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                new Claim(ClaimTypes.Name, $"{user.FirstName} {user.LastName}"),
+                new Claim(ClaimTypes.Email, user.Email),
+                new Claim(ClaimTypes.Role, !user.IsAdmin ? "User" : "Admin"),
                 new Claim("EnrollmentNumber", user.StudenEnrollmentNumber)
             };
 
