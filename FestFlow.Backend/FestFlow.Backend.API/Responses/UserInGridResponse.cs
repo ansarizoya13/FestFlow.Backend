@@ -1,14 +1,14 @@
 ﻿namespace FestFlow.Backend.API.Responses
 {
-    public class UserResponse
+    public class UserInGridResponse
     {
-        public Guid Id { get; set; }
+        public Guid UserId { get; set; }
         public string FirstName { get; set; }
         public string LastName { get; set; }
-        public string StudenEnrollmentNumber { get; set; }
-        public string PasswordHash { get; set; }
         public string Email { get; set; }
+        public string StudenEnrollmentNumber { get; set; }
+        public bool IsDeleted { get; set; }
         public bool IsAdmin { get; set; }
-        public string DepartmentName { get; set; }
+        public string Branch { get; set; }
     }
 }

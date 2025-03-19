@@ -86,6 +86,7 @@ builder.Services.AddAuthorization();
 builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddScoped<IAuthRepository, AuthRepository>();
 builder.Services.AddScoped<IDepartmentRepository, DepartmentRepository>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
 
 #endregion
 
@@ -96,6 +97,7 @@ var app = builder.Build();
 app.UseCors(MyAllowSpecificOrigins);
 
 app.UseMiddleware<LoggingMiddleware>();
+app.UseMiddleware<TokenRevocationMiddleware>();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

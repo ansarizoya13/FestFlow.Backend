@@ -2,8 +2,11 @@
 using FestFlow.Backend.API.Repositories.IRepositories;
 using FestFlow.Backend.API.Responses;
 using FestFlow.Backend.API.Services.IServices;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using Bcrypt = BCrypt.Net.BCrypt;
 
 namespace FestFlow.Backend.API.Controllers
@@ -14,6 +17,7 @@ namespace FestFlow.Backend.API.Controllers
     {
         private readonly IAuthRepository _authRepository;
         private readonly IJwtService _jwtService;
+        public static readonly HashSet<string> _revokedTokens = new();
 
         public AuthController(IAuthRepository authRepository, IJwtService jwtService)
         {
@@ -55,6 +59,33 @@ namespace FestFlow.Backend.API.Controllers
 
             var token = await _jwtService.GenerateJwtToken(response);
             return Ok(new { token });
+        }
+
+        [HttpPost]
+        [Route("Logout")]
+        [Authorize]
+        public IActionResult Logout()
+        {
+            var token = HttpContext.Request.Headers["Authorization"].ToString().Replace("Bearer ", "");
+
+            if (!string.IsNullOrEmpty(token))
+            {
+                var handler = new JwtSecurityTokenHandler();
+                var jwtToken = handler.ReadJwtToken(token);
+
+                var userId = jwtToken.Claims.FirstOrDefault(claim => claim.Type == ClaimTypes.NameIdentifier)?.Value;
+
+                if (!string.IsNullOrEmpty(userId))
+                {
+                    _revokedTokens.Add(token);  // Add the token to the revoked list
+                    return Ok(new { message = $"Logout successful for User ID: {userId}" });
+                }
+
+                return Unauthorized(new { message = "Invalid token or user not identified." });
+            }
+
+            return BadRequest(new { message = "Authorization token is missing." });
+
         }
     }
 }
