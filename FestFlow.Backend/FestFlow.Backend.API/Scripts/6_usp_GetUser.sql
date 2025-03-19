@@ -7,5 +7,5 @@ BEGIN
 		s.StudenEnrollmentNumber, u.PasswordHash, u.IsAdmin, d.Name as DepartmentName
 	FROM Students s JOIN Users u ON s.Id = u.StudentID
 	JOIN Departments d ON d.ID = s.BranchID
-	Where s.Email = @email
+	Where s.Email = @email AND u.IsDeleted = 0
 END
