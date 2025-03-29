@@ -1,0 +1,10 @@
+USE FestFlow
+GO
+
+CREATE TABLE [EventDepartmentMapping] (
+    ID UNIQUEIDENTIFIER DEFAULT NEWID() PRIMARY KEY,
+    EventId UNIQUEIDENTIFIER NOT NULL,
+    DepartmentId UNIQUEIDENTIFIER NOT NULL,
+    FOREIGN KEY (EventId) REFERENCES [Events](ID),
+    FOREIGN KEY (DepartmentId) REFERENCES Departments(ID)
+);
