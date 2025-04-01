@@ -34,7 +34,7 @@ namespace FestFlow.Backend.API.Services
                 new Claim("DepartmentName", user.DepartmentName)
             };
 
-            var produceToken = new JwtSecurityToken(_configuration["Jwt:Issuer"], _configuration["Jwt:Audience"], claims, expires: DateTime.Now.AddMinutes(15), signingCredentials: credentials);
+            var produceToken = new JwtSecurityToken(_configuration["Jwt:Issuer"], _configuration["Jwt:Audience"], claims, expires: DateTime.Now.AddMinutes(120), signingCredentials: credentials);
             var token = new JwtSecurityTokenHandler().WriteToken(produceToken);
 
             return await Task.FromResult(token);
