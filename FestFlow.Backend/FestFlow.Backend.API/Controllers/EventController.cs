@@ -33,7 +33,7 @@ namespace FestFlow.Backend.API.Controllers
             var userId = TokenHelper.GetUserIdFromClaims(authHeader);
 
             if (userId == Guid.Empty)
-                return BadRequest("Authorization token is missing.");
+                return Unauthorized("Authorization token is missing.");
 
             using (var connection = DbHelper.GetDbConnection(_configuration))
             {
@@ -82,5 +82,23 @@ namespace FestFlow.Backend.API.Controllers
             }
         }
 
+        [HttpPost]
+        [Route("sendEventResponse")]
+        [Authorize(Roles = "User")]
+        public async Task<ActionResult> SendEventResponse([FromBody] EventResponseDto eventResponseDTO)
+        {
+            var authHeader = HttpContext.Request.Headers["Authorization"].ToString().Replace("Bearer ", "");
+            var userId = TokenHelper.GetUserIdFromClaims(authHeader);
+
+            if (userId == Guid.Empty)
+                return Unauthorized("Authorization token is missing.");
+
+            using(var connection = DbHelper.GetDbConnection(_configuration))
+            {
+
+            }
+
+            return Ok();
+        }
     }
 }
