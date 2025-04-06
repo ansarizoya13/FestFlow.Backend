@@ -85,7 +85,7 @@ namespace FestFlow.Backend.API.Controllers
         [HttpPost]
         [Route("sendEventResponse")]
         [Authorize(Roles = "User")]
-        public async Task<ActionResult> SendEventResponse([FromBody] EventResponseDto eventResponseDTO)
+        public async Task<ActionResult<object>> SendEventResponse([FromBody] EventResponseDto eventResponseDTO)
         {
             var authHeader = HttpContext.Request.Headers["Authorization"].ToString().Replace("Bearer ", "");
             var userId = TokenHelper.GetUserIdFromClaims(authHeader);
@@ -93,12 +93,44 @@ namespace FestFlow.Backend.API.Controllers
             if (userId == Guid.Empty)
                 return Unauthorized("Authorization token is missing.");
 
-            using(var connection = DbHelper.GetDbConnection(_configuration))
+            if (eventResponseDTO?.Responses == null || !eventResponseDTO.Responses.Any())
+                return BadRequest("No responses provided.");
+
+            using (var connection = DbHelper.GetDbConnection(_configuration))
             {
+                foreach(var response in eventResponseDTO.Responses)
+                {
+                    if (response.Answer is null)
+                    {
+                        foreach (var optionSetId in response.EventQuestionnaireOptionSetIds)
+                        {
+                            var parameters = new
+                            {
+                                questionId = response.EventQuestionnaireId,
+                                userId = userId,
+                                optionSetId = optionSetId,
+                                answer = response.Answer,
+                            };
 
+                            await connection.ExecuteAsync("usp_InsertAnswers", parameters, commandType: CommandType.StoredProcedure);
+                        }
+                    }
+                    else
+                    {
+                        var parameters = new
+                        {
+                            questionId = response.EventQuestionnaireId,
+                            userId = userId,
+                            optionSetId = response.EventQuestionnaireOptionSetIds,
+                            answer = response.Answer,
+                        };
+                        
+                        await connection.ExecuteAsync("usp_InsertAnswers", parameters, commandType: CommandType.StoredProcedure);
+                    }
+                }
+
+                return Ok(new { message = "Submitted successfully" });
             }
-
-            return Ok();
         }
     }
 }
