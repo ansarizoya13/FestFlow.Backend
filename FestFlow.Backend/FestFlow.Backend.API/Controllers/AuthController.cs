@@ -1,5 +1,6 @@
 ﻿using FestFlow.Backend.API.DTO;
 using FestFlow.Backend.API.Repositories.IRepositories;
+using FestFlow.Backend.API.Resources;
 using FestFlow.Backend.API.Responses;
 using FestFlow.Backend.API.Services.IServices;
 using Microsoft.AspNetCore.Authorization;
@@ -85,7 +86,6 @@ namespace FestFlow.Backend.API.Controllers
             }
 
             return BadRequest(new { message = "Authorization token is missing." });
-
         }
     }
 }

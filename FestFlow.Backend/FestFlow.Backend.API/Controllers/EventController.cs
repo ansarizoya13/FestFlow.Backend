@@ -195,6 +195,7 @@ namespace FestFlow.Backend.API.Controllers
 
         [HttpGet]
         [Route("GetEventsResponses/{eventId}")]
+        [Authorize(Roles = "Admin")]
         public async Task<ActionResult<IEnumerable<EventQuestionAnswersResponse>>> GetEventsResponses(Guid eventId)
         {
             using (var connection = DbHelper.GetDbConnection(_configuration))

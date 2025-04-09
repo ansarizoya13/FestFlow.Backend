@@ -1,10 +1,13 @@
-﻿using FestFlow.Backend.API.DTO;
+﻿using Dapper;
+using FestFlow.Backend.API.DTO;
 using FestFlow.Backend.API.Repositories.IRepositories;
+using FestFlow.Backend.API.Resources;
 using FestFlow.Backend.API.Responses;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+using System.Data;
 
 namespace FestFlow.Backend.API.Controllers
 {
@@ -13,10 +16,12 @@ namespace FestFlow.Backend.API.Controllers
     public class UserController : ControllerBase
     {
         private readonly IUserRepository _userRepository;
+        private readonly IConfiguration _configuration;
 
-        public UserController(IUserRepository userRepository)
+        public UserController(IUserRepository userRepository, IConfiguration configuration)
         {
             _userRepository = userRepository;
+            _configuration = configuration;
         }
 
         [HttpGet]
@@ -45,6 +50,18 @@ namespace FestFlow.Backend.API.Controllers
         {
             var result = await _userRepository.MarkUserAsInactive(dto);
             return Ok(result);
+        }
+
+        [HttpGet]
+        [Route("getStatistics")]
+        [Authorize(Roles = "Admin")]
+        public async Task<ActionResult<DashboardStatsResponse>> GetStatistics()
+        {
+            using (var connection = DbHelper.GetDbConnection(_configuration))
+            {
+                var result = await connection.QueryFirstOrDefaultAsync<DashboardStatsResponse>("usp_GetStatistics", commandType: CommandType.StoredProcedure);
+                return Ok(result);
+            }
         }
     }
 }
