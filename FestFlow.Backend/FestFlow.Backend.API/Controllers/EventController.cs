@@ -1,10 +1,12 @@
 ﻿using Dapper;
+using FestFlow.Backend.API.DTO;
 using FestFlow.Backend.API.Enums;
 using FestFlow.Backend.API.Resources;
 using FestFlow.Backend.API.Responses;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Data.SqlClient;
 using Newtonsoft.Json.Linq;
 using System.Data;
 using System.IdentityModel.Tokens.Jwt;
@@ -39,6 +41,64 @@ namespace FestFlow.Backend.API.Controllers
             {
                 var result = await connection.QueryAsync<EventsResponse>("usp_GetEvents", new { userId = userId }, commandType: CommandType.StoredProcedure);
                 return Ok(result);
+            }
+        }
+
+        [HttpGet]
+        [Route("getEventsList")]
+        [Authorize(Roles = "Admin")]
+        public async Task<ActionResult<IEnumerable<GetEventsResponse>>> GetEventsList()
+        {
+            using (var connection = DbHelper.GetDbConnection(_configuration))
+            {
+                var result = await connection.QueryAsync<GetEventsResponse>(@"select 
+	                    ID as eventId, Name, Description, IsLive, IsAvailableForFeedback
+                        from events");
+
+                return Ok(result);
+            }
+        }
+
+        [HttpPost]
+        [Route("makeEventLive")]
+        [Authorize(Roles = "Admin")]
+        public async Task<ActionResult<object>> MakeEventLive(EventLiveDTO dto)
+        {
+            using (var connection = DbHelper.GetDbConnection(_configuration))
+            {
+                var parameters = new
+                {
+                    eventId = dto.eventId,
+                    value = dto.value
+                };
+
+                var result = await connection.ExecuteAsync("UPDATE [Events] SET isLive = @value WHERE ID = @eventId", parameters);
+
+                if (result > 0)
+                    return Ok(new { message = "Event status updated successfully" });
+                else
+                    return BadRequest("Failed to update event status");
+            }
+        }
+
+        [HttpPost]
+        [Route("makeEventAvailableForFeedback")]
+        [Authorize(Roles = "Admin")]
+        public async Task<ActionResult<object>> MakeEventForFeedback(EventLiveDTO dto)
+        {
+            using (var connection = DbHelper.GetDbConnection(_configuration))
+            {
+                var parameters = new
+                {
+                    eventId = dto.eventId,
+                    value = dto.value
+                };
+                var result = await connection.ExecuteAsync("UPDATE Events SET isAvailableForFeedback = @value WHERE ID = @eventId", parameters);
+
+                if (result > 0)
+                    return Ok(new { message = "Event updated successfully" });
+                else
+                    return BadRequest("Failed to update event status");
             }
         }
 
@@ -98,7 +158,7 @@ namespace FestFlow.Backend.API.Controllers
 
             using (var connection = DbHelper.GetDbConnection(_configuration))
             {
-                foreach(var response in eventResponseDTO.Responses)
+                foreach (var response in eventResponseDTO.Responses)
                 {
                     if (response.Answer is null)
                     {
@@ -124,12 +184,28 @@ namespace FestFlow.Backend.API.Controllers
                             optionSetId = response.EventQuestionnaireOptionSetIds,
                             answer = response.Answer,
                         };
-                        
+
                         await connection.ExecuteAsync("usp_InsertAnswers", parameters, commandType: CommandType.StoredProcedure);
                     }
                 }
 
                 return Ok(new { message = "Submitted successfully" });
+            }
+        }
+
+        [HttpGet]
+        [Route("GetEventsResponses/{eventId}")]
+        public async Task<ActionResult<IEnumerable<EventQuestionAnswersResponse>>> GetEventsResponses(Guid eventId)
+        {
+            using (var connection = DbHelper.GetDbConnection(_configuration))
+            {
+                var parameter = new
+                {
+                    eventId = eventId
+                };
+
+                var result = await connection.QueryAsync<EventQuestionAnswersResponse>("usp_GetEventsResponses", parameter, commandType: CommandType.StoredProcedure);
+                return Ok(result);
             }
         }
     }
