@@ -209,5 +209,105 @@ namespace FestFlow.Backend.API.Controllers
                 return Ok(result);
             }
         }
+
+        [HttpPost]
+        [Route("CreateEventWithQuestions")]
+        [Authorize(Roles = "Admin")]
+        public async Task<ActionResult<object>> CreateEventWithQuestions([FromBody]EventCreateDTO dto)
+        {
+            using (var connection = DbHelper.GetDbConnection(_configuration))
+            {
+                // 1. INSERT EVENT
+                var eventId = Guid.NewGuid();
+
+                var newEvent = new
+                {
+                    Id = eventId,
+                    Name = dto.Name,
+                    Description = dto.Description,
+                    CreatedBy = "admin@test.com",
+                    CreatedAt = DateTime.UtcNow,
+                };
+                
+                var result = await connection.ExecuteAsync(@"INSERT INTO Events (Id, Name, Description, CreatedBy, CreatedAt) 
+                    VALUES (@Id, @Name, @Description, @CreatedBy, @CreatedAt)", newEvent);
+
+
+                // 2. INSERT BRANCHES MAPPING
+                foreach(var branch in dto.Branches)
+                {
+                    var eventBranch = new
+                    {
+                        Id = Guid.NewGuid(),
+                        EventId = eventId,
+                        BranchId = branch,
+                    };
+
+                    await connection.ExecuteAsync(@"INSERT INTO EventDepartmentMapping (Id, EventId, DepartmentId) 
+                        VALUES (@Id, @EventId, @BranchId)", eventBranch);
+                }
+
+
+                // 3. INSERT QUESTIONS
+                int sequence = 0;
+                foreach (var question in dto.Questions)
+                {
+                    var questionType = MapQuestionType(question.QuestionType);
+                    var questionId = Guid.NewGuid();
+
+                    var newQuestion = new
+                    {
+                        Id = questionId,
+                        EventId = eventId,
+                        Label = question.QuestionText,
+                        Type = questionType,
+                        Mandatory = question.Mandatory,
+                        IsOptionSet = ((questionType == (int)InputElements.Radio) 
+                                || (questionType == (int)InputElements.Checkbox) || (questionType == (int)InputElements.Dropdown)),
+                        HasMultipleAnswers = false,
+                        Sequence = sequence++,
+                    };
+
+                    await connection.ExecuteAsync(@"INSERT INTO EventQuestionnaire (Id, EventId, Label, Type, Mandatory, IsOptionSet, Sequence, HasMultipleAnswers) 
+                        VALUES (@Id, @EventId, @Label, @Type, @Mandatory, @IsOptionSet, @Sequence, @HasMultipleAnswers)", newQuestion);
+
+
+                    // 4. INSERT OPTIONS
+                    if (question.Options != null && question.Options.Any())
+                    {
+                        foreach (var option in question.Options)
+                        {
+                            var newOption = new
+                            {
+                                Id = Guid.NewGuid(),
+                                QuestionId = questionId,
+                                Option = option
+                            };
+                            await connection.ExecuteAsync(@"INSERT INTO EventQuestionnaireOptionSet (Id, EventQuestionnaireId, Options) 
+                                VALUES (@Id, @QuestionId, @Option)", newOption);
+                        }
+                    }
+                }
+            }
+
+            return Ok(new { message = "Inserted successfully" });
+        }
+
+        private int MapQuestionType(string type)
+        {
+            return type.ToLower() switch
+            {
+                "text" => 0,
+                "email" => 1,
+                "number" => 2,
+                "date" => 3,
+                "time" => 4,
+                "datetime-local" => 5,
+                "radio" => 6,
+                "checkbox" => 7,
+                "dropdown" => 8,
+            };
+        }
+
     }
 }
